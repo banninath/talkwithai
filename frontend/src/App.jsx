@@ -1,14 +1,16 @@
-import { useReducer, useEffect } from 'react';
+import { useReducer, useEffect, useRef } from 'react';
 import Landing from './components/Landing.jsx';
 import Conversation from './components/Conversation.jsx';
 import CompletedView from './components/CompletedView.jsx';
 import ErrorView from './components/ErrorView.jsx';
 import { useMicrophone } from './hooks/useMicrophone.js';
+import { GeminiLiveAdapter } from './services/GeminiLiveAdapter.js';
 import './index.css';
+
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3001';
 
 const initialState = { status: 'IDLE', errorType: null };
 
-// Defensive reducer: each transition only valid from its expected source state.
 function conversationReducer(state, action) {
   switch (action.type) {
     case 'START':
@@ -43,40 +45,105 @@ function conversationReducer(state, action) {
 function App() {
   const [state, dispatch] = useReducer(conversationReducer, initialState);
   const { stream, requestMic, release } = useMicrophone();
+  const voiceServiceRef = useRef(null);
 
-  // CONNECTING: request microphone permission.
-  // Replaces the simulated 1.5s delay from Phase 2.
-  // Phase 8 will also request a backend session here.
+  // CONNECTING: request mic → request token → connect to Gemini
   useEffect(() => {
     if (state.status !== 'CONNECTING') return;
 
     let cancelled = false;
 
-    requestMic().then((result) => {
+    async function setupSession() {
+      // Step 1: Request microphone permission
+      const micResult = await requestMic();
       if (cancelled) return;
-      if (result.success) {
-        dispatch({ type: 'CONNECTED' });
-      } else {
-        dispatch({ type: 'ERROR', errorType: result.errorType });
+      if (!micResult.success) {
+        dispatch({ type: 'ERROR', errorType: micResult.errorType });
+        return;
       }
-    });
+
+      // Step 2: Request ephemeral token from backend
+      let token;
+      try {
+        const response = await fetch(`${BACKEND_URL}/api/session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        });
+
+        if (cancelled) return;
+
+        if (!response.ok) {
+          console.error('[TalkWithAI] Backend returned:', response.status);
+          dispatch({ type: 'ERROR', errorType: 'connection' });
+          return;
+        }
+
+        const data = await response.json();
+        token = data.token;
+
+        if (!token) {
+          console.error('[TalkWithAI] No token in response');
+          dispatch({ type: 'ERROR', errorType: 'connection' });
+          return;
+        }
+      } catch (error) {
+        if (cancelled) return;
+        console.error('[TalkWithAI] Backend request failed:', error.message);
+        dispatch({ type: 'ERROR', errorType: 'connection' });
+        return;
+      }
+
+      // Step 3: Connect to Gemini Live API using the ephemeral token
+      const adapter = new GeminiLiveAdapter();
+      voiceServiceRef.current = adapter;
+
+      const connectResult = await adapter.connect(token);
+      if (cancelled) return;
+
+      if (!connectResult.success) {
+        console.error('[TalkWithAI] Gemini connection failed:', connectResult.error);
+        dispatch({ type: 'ERROR', errorType: 'connection' });
+        return;
+      }
+
+      // All steps succeeded — conversation is live
+      dispatch({ type: 'CONNECTED' });
+    }
+
+    setupSession();
 
     return () => {
       cancelled = true;
     };
   }, [state.status, requestMic]);
 
-  // ENDING: release microphone, then transition to COMPLETED.
+  // ENDING: disconnect from Gemini → release mic → complete
   useEffect(() => {
     if (state.status !== 'ENDING') return;
 
+    // Disconnect from Gemini
+    if (voiceServiceRef.current) {
+      voiceServiceRef.current.disconnect();
+      voiceServiceRef.current = null;
+    }
+
+    // Notify backend (best-effort, don't wait)
+    fetch(`${BACKEND_URL}/api/session/end`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    }).catch(() => {});
+
+    // Release microphone
     release();
+
     const timer = setTimeout(() => dispatch({ type: 'ENDED' }), 800);
     return () => clearTimeout(timer);
   }, [state.status, release]);
 
-  // Simulated LISTENING ↔ AI_SPEAKING cycling (Phase 2-3 only).
-  // Phase 8+ will replace these with real Gemini Live events.
+  // Simulated LISTENING ↔ AI_SPEAKING cycling (Phase 2-7 only).
+  // Phase 8 will replace these with real Gemini audio events.
   useEffect(() => {
     let timer;
     switch (state.status) {
