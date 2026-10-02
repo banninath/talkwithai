@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 // Dev (.env.development): 30s for fast testing.
 // Prod (.env.production): 480s (8 minutes).
 const DEFAULT_DURATION = Number(import.meta.env.VITE_SESSION_DURATION_SECONDS) || 480;
-const DEFAULT_WARNING = Number(import.meta.env.VITE_SESSION_WARNING_SECONDS) || 15;
+const DEFAULT_WARNING = Number(import.meta.env.VITE_SESSION_WARNING_SECONDS) || 5;
 
 function Timer({
   durationSeconds = DEFAULT_DURATION,
