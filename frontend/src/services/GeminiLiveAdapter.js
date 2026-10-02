@@ -212,6 +212,29 @@ export class GeminiLiveAdapter {
     }
   }
 
+  // ===== Time warning (called when ~15 seconds remain) =====
+
+  sendTimeWarning() {
+    if (!this.session || !this.connected) return;
+
+    try {
+      // Send a system notification to the AI.
+      // The system instruction (locked in the token) tells the AI:
+      // "When the application indicates that approximately 15 seconds remain,
+      //  naturally acknowledge that the conversation is ending."
+      this.session.sendClientContent({
+        turns: [{
+          role: 'user',
+          parts: [{ text: "[System: Approximately 15 seconds remain in this conversation. Please wrap up naturally and say goodbye.]" }]
+        }]
+      });
+      console.log('[GeminiLiveAdapter] Time warning sent to AI');
+    } catch (e) {
+      console.error('[GeminiLiveAdapter] Time warning failed:', e.message);
+    }
+  }
+
+
   // ===== Message handler: parse Gemini messages =====
 
   handleMessage(message) {

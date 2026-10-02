@@ -175,9 +175,12 @@ function App() {
           stream={stream}
           onEnd={() => dispatch({ type: 'END' })}
           onTimerExpire={() => dispatch({ type: 'END' })}
-          onTimerWarning={() => {
+                   onTimerWarning={() => {
             console.log('[TalkWithAI] 15-second warning triggered');
-            // Phase 10: tell the AI that time is almost up
+            // Tell the AI that time is almost up
+            if (voiceServiceRef.current) {
+              voiceServiceRef.current.sendTimeWarning();
+            }
           }}
         />
       );
