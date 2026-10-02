@@ -8,12 +8,19 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || 'http://localhost:5173';
 
-// ===== Middleware =====
+// ===== Security middleware =====
 
+// Trust proxy — required for correct req.ip when deployed behind
+// reverse proxies (Render, Vercel, etc.). Without this, all requests
+// appear to come from the proxy's IP, making rate limiting useless.
+app.set('trust proxy', 1);
+
+// Secure HTTP headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
+// CORS — only allow the frontend origin
 app.use(cors({
   origin: FRONTEND_ORIGIN,
   methods: ['GET', 'POST'],
@@ -21,7 +28,8 @@ app.use(cors({
   credentials: false,
 }));
 
-app.use(express.json());
+// Body parser with size limit (prevents oversized request abuse)
+app.use(express.json({ limit: '10kb' }));
 
 // ===== Routes =====
 
@@ -33,10 +41,12 @@ app.use('/api', sessionRoutes);
 
 // ===== Error handling =====
 
+// 404
 app.use((req, res) => {
   res.status(404).json({ error: 'Not found' });
 });
 
+// 500 — never expose stack traces or internal details
 app.use((err, req, res, next) => {
   console.error('[TalkWithAI Backend] Unhandled error:', err.message);
   res.status(500).json({ error: 'Something went wrong' });

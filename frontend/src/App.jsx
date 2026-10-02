@@ -53,7 +53,7 @@ function App() {
 
     let cancelled = false;
 
-    async function setupSession() {
+        async function setupSession() {
       // Step 1: Request microphone permission
       const micResult = await requestMic();
       if (cancelled) return;
@@ -72,6 +72,20 @@ function App() {
         });
 
         if (cancelled) return;
+
+        // Handle rate limiting specifically
+        if (response.status === 429) {
+          const data = await response.json();
+          console.log('[TalkWithAI] Rate limited:', data.reason);
+          dispatch({ type: 'ERROR', errorType: 'rate_limited' });
+          return;
+        }
+
+        // Handle service unavailable (API key not configured)
+        if (response.status === 503) {
+          dispatch({ type: 'ERROR', errorType: 'connection' });
+          return;
+        }
 
         if (!response.ok) {
           console.error('[TalkWithAI] Backend returned:', response.status);
@@ -95,8 +109,6 @@ function App() {
       }
 
       // Step 3: Connect to Gemini Live API with mic stream
-      // Use micResult.stream (NOT the stream variable from state)
-      // to avoid re-render loops.
       const adapter = new GeminiLiveAdapter();
       voiceServiceRef.current = adapter;
 

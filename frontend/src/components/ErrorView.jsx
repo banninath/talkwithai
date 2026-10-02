@@ -1,10 +1,7 @@
-// User-friendly error messages per error type.
-// Never expose: API keys, stack traces, internal server errors, provider credentials.
 const ERROR_MESSAGES = {
   denied: {
     title: 'Microphone access denied',
-    message:
-      'Please allow microphone access in your browser settings and try again.',
+    message: 'Please allow microphone access in your browser settings and try again.',
   },
   unavailable: {
     title: 'No microphone found',
@@ -12,13 +9,15 @@ const ERROR_MESSAGES = {
   },
   unsupported: {
     title: 'Browser not supported',
-    message:
-      "Your browser doesn't support voice conversations. Please try the latest Chrome or Edge.",
+    message: "Your browser doesn't support voice conversations. Please try the latest Chrome or Edge.",
+  },
+  rate_limited: {
+    title: 'Please wait a moment',
+    message: "You're starting conversations too quickly. Please wait a minute and try again.",
   },
   connection: {
     title: 'Something went wrong',
-    message:
-      "Sorry, we couldn't start the conversation. Please try again.",
+    message: "Sorry, we couldn't start the conversation. Please try again.",
   },
 };
 

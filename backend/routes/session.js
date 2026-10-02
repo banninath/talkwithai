@@ -5,19 +5,34 @@ const router = express.Router();
 
 // ===== Rate limiting (in-memory, no database) =====
 
-const sessionTracker = new Map(); // IP → { count, lastSession, activeSessions, hourStart }
+const sessionTracker = new Map();
 
 const RATE_LIMITS = {
   MAX_SESSIONS_PER_HOUR: 5,
-  COOLDOWN_MS: 30 * 1000,       // 30 seconds between sessions
-  MAX_ACTIVE_SESSIONS: 1,       // 1 active session per IP at a time
+  COOLDOWN_MS: 30 * 1000,
+  MAX_ACTIVE_SESSIONS: 1,
+  STALE_SESSION_MS: 10 * 60 * 1000, // 10 minutes (matches token expiry)
 };
 
 function getClientIP(req) {
-  return req.ip || req.connection?.remoteAddress || 'unknown';
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+}
+
+// Clean up stale sessions — if a user closed the tab without
+// calling /api/session/end, their active session count stays
+// elevated. This clears sessions older than the token expiry.
+function cleanupStaleSessions() {
+  const now = Date.now();
+  for (const [ip, record] of sessionTracker.entries()) {
+    if (record.lastSession > 0 && now - record.lastSession > RATE_LIMITS.STALE_SESSION_MS) {
+      record.activeSessions = 0;
+    }
+  }
 }
 
 function checkRateLimit(ip) {
+  cleanupStaleSessions();
+
   const now = Date.now();
   const record = sessionTracker.get(ip) || {
     count: 0,
@@ -64,7 +79,7 @@ function decrementActiveSession(ip) {
   }
 }
 
-// ===== AI personality (locked in token, can't be changed by client) =====
+// ===== AI personality (locked in token, client can't change it) =====
 
 const SYSTEM_INSTRUCTION = `You are TalkWithAI, a friendly conversational voice AI.
 
@@ -88,7 +103,7 @@ router.post('/session', async (req, res) => {
   try {
     const ip = getClientIP(req);
 
-    // 1. Check rate limits
+    // 1. Rate limit check
     const rateCheck = checkRateLimit(ip);
     if (!rateCheck.allowed) {
       const messages = {
@@ -96,8 +111,10 @@ router.post('/session', async (req, res) => {
         cooldown: 'Please wait a moment before starting a new conversation.',
         active_session: 'You already have an active conversation.',
       };
+      // 429 Too Many Requests — include retry hint
       return res.status(429).json({
         error: 'rate_limited',
+        reason: rateCheck.reason,
         message: messages[rateCheck.reason] || 'Please try again later.',
       });
     }
@@ -105,9 +122,9 @@ router.post('/session', async (req, res) => {
     // 2. Verify API key is configured
     if (!process.env.GEMINI_API_KEY) {
       console.error('[TalkWithAI Backend] GEMINI_API_KEY is not set in .env');
-      return res.status(500).json({
+      return res.status(503).json({
         error: 'not_configured',
-        message: 'Sorry, we couldn\'t start the conversation. Please try again.',
+        message: 'Sorry, the service is not available right now. Please try again later.',
       });
     }
 
@@ -115,10 +132,6 @@ router.post('/session', async (req, res) => {
     const client = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
     // 4. Create ephemeral token
-    //    - uses: 1          → single session only
-    //    - expireTime: 10 min → token expires after 10 minutes (8 min session + 2 min buffer)
-    //    - newSessionExpireTime: 1 min → must connect within 1 minute
-    //    - liveConnectConstraints → locks model + config so client can't change them
     const now = new Date();
     const token = await client.authTokens.create({
       config: {
@@ -138,7 +151,7 @@ router.post('/session', async (req, res) => {
     // 5. Update rate limit tracker
     updateTracker(ip, rateCheck.record);
 
-    // 6. Return token to client
+    // 6. Return token to client — never include the API key
     console.log(`[TalkWithAI Backend] Session created for IP: ${ip}`);
     res.json({
       token: token.name,
@@ -147,6 +160,7 @@ router.post('/session', async (req, res) => {
     });
 
   } catch (error) {
+    // Log full error server-side, send safe message to client
     console.error('[TalkWithAI Backend] Session creation error:', error.message);
     res.status(500).json({
       error: 'session_failed',
