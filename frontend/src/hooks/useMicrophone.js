@@ -1,30 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 
-/**
- * useMicrophone
- * Manages microphone permission, access, and cleanup.
- *
- * Returns:
- *   stream     — MediaStream | null (null until permission granted)
- *   requestMic — async () => { success: boolean, errorType?: string }
- *   release    — () => void  (stops all tracks, clears stream)
- *
- * Error types:
- *   'unsupported' — browser lacks getUserMedia
- *   'denied'      — user blocked permission
- *   'unavailable' — no mic device found / hardware error
- *   'connection'  — unknown / fallback
- */
 export function useMicrophone() {
   const [stream, setStream] = useState(null);
 
   const requestMic = useCallback(async () => {
-    // 1. Check browser support
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       return { success: false, errorType: 'unsupported' };
     }
 
-    // 2. Request microphone access
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -35,9 +18,10 @@ export function useMicrophone() {
         video: false,
       });
       setStream(mediaStream);
-      return { success: true };
+      // Return the stream directly so callers don't need to
+      // read it from state (which causes re-render loops).
+      return { success: true, stream: mediaStream };
     } catch (err) {
-      // Map browser error names to user-friendly types
       if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
         return { success: false, errorType: 'denied' };
       }
@@ -51,7 +35,6 @@ export function useMicrophone() {
       ) {
         return { success: false, errorType: 'unavailable' };
       }
-      // Unknown error
       return { success: false, errorType: 'connection' };
     }
   }, []);
@@ -65,7 +48,6 @@ export function useMicrophone() {
     });
   }, []);
 
-  // Cleanup on unmount (page close, refresh, etc.)
   useEffect(() => {
     return () => {
       setStream((current) => {

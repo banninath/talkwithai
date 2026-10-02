@@ -47,7 +47,7 @@ function App() {
   const { stream, requestMic, release } = useMicrophone();
   const voiceServiceRef = useRef(null);
 
-  // CONNECTING: request mic → request token → connect to Gemini
+    // CONNECTING: request mic → request token → connect to Gemini with audio
   useEffect(() => {
     if (state.status !== 'CONNECTING') return;
 
@@ -94,11 +94,19 @@ function App() {
         return;
       }
 
-      // Step 3: Connect to Gemini Live API using the ephemeral token
+      // Step 3: Connect to Gemini Live API with mic stream
+      // Use micResult.stream (NOT the stream variable from state)
+      // to avoid re-render loops.
       const adapter = new GeminiLiveAdapter();
       voiceServiceRef.current = adapter;
 
-      const connectResult = await adapter.connect(token);
+      adapter.onAIStartSpeaking(() => dispatch({ type: 'AI_START_SPEAKING' }));
+      adapter.onAIStopSpeaking(() => dispatch({ type: 'AI_STOP_SPEAKING' }));
+      adapter.onInterruption(() => dispatch({ type: 'AI_STOP_SPEAKING' }));
+      adapter.onError(() => dispatch({ type: 'ERROR', errorType: 'connection' }));
+      adapter.onClose(() => dispatch({ type: 'END' }));
+
+      const connectResult = await adapter.connect(token, micResult.stream);
       if (cancelled) return;
 
       if (!connectResult.success) {
@@ -107,7 +115,6 @@ function App() {
         return;
       }
 
-      // All steps succeeded — conversation is live
       dispatch({ type: 'CONNECTED' });
     }
 
@@ -116,19 +123,21 @@ function App() {
     return () => {
       cancelled = true;
     };
+    // NOTE: stream is NOT in the deps array — using micResult.stream instead
+    // to prevent duplicate /api/session calls when stream state changes.
   }, [state.status, requestMic]);
 
   // ENDING: disconnect from Gemini → release mic → complete
   useEffect(() => {
     if (state.status !== 'ENDING') return;
 
-    // Disconnect from Gemini
+    // Disconnect from Gemini (stops audio capture + playback)
     if (voiceServiceRef.current) {
       voiceServiceRef.current.disconnect();
       voiceServiceRef.current = null;
     }
 
-    // Notify backend (best-effort, don't wait)
+    // Notify backend (best-effort)
     fetch(`${BACKEND_URL}/api/session/end`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -142,22 +151,11 @@ function App() {
     return () => clearTimeout(timer);
   }, [state.status, release]);
 
-  // Simulated LISTENING ↔ AI_SPEAKING cycling (Phase 2-7 only).
-  // Phase 8 will replace these with real Gemini audio events.
-  useEffect(() => {
-    let timer;
-    switch (state.status) {
-      case 'LISTENING':
-        timer = setTimeout(() => dispatch({ type: 'AI_START_SPEAKING' }), 3000);
-        break;
-      case 'AI_SPEAKING':
-        timer = setTimeout(() => dispatch({ type: 'AI_STOP_SPEAKING' }), 3000);
-        break;
-      default:
-        break;
-    }
-    return () => clearTimeout(timer);
-  }, [state.status]);
+  // NOTE: The simulated LISTENING ↔ AI_SPEAKING cycling from Phase 2-7
+  // has been REMOVED. State transitions are now driven by real Gemini events:
+  //   - AI sends audio → onAIStartSpeaking → AI_SPEAKING
+  //   - AI turn complete → onAIStopSpeaking → LISTENING
+  //   - User interrupts → onInterruption → AI_STOP_SPEAKING → LISTENING
 
   switch (state.status) {
     case 'IDLE':
@@ -179,6 +177,7 @@ function App() {
           onTimerExpire={() => dispatch({ type: 'END' })}
           onTimerWarning={() => {
             console.log('[TalkWithAI] 15-second warning triggered');
+            // Phase 10: tell the AI that time is almost up
           }}
         />
       );
