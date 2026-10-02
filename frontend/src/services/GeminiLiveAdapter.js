@@ -118,6 +118,9 @@ export class GeminiLiveAdapter {
   setupAudioCapture(micStream) {
     // Create AudioContext at 16kHz (Gemini's required input rate)
     this.inputContext = new AudioContext({ sampleRate: 16000 });
+        if (this.inputContext.state === 'suspended') {
+      this.inputContext.resume().catch(() => {});
+    }
 
     const source = this.inputContext.createMediaStreamSource(micStream);
 
@@ -163,6 +166,9 @@ export class GeminiLiveAdapter {
   setupAudioPlayback() {
     // Create AudioContext at 24kHz (Gemini's output rate)
     this.outputContext = new AudioContext({ sampleRate: 24000 });
+        if (this.outputContext.state === 'suspended') {
+      this.outputContext.resume().catch(() => {});
+    }
     this.nextPlayTime = 0;
     console.log('[GeminiLiveAdapter] Audio playback ready (24kHz PCM)');
   }

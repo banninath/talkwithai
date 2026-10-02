@@ -57,6 +57,7 @@ body {
 
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   display: flex;
   align-items: center;
@@ -174,6 +175,7 @@ body {
   align-items: center;
   justify-content: space-between;
   min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   max-width: 480px;
   padding: var(--space-lg) var(--space-lg) calc(var(--space-lg) * 2);
@@ -582,18 +584,33 @@ body {
   }
 
   .voice-orb {
-    width: 200px;
-    height: 200px;
+    width: 180px;
+    height: 180px;
   }
 
   .voice-orb__core {
-    width: 64px;
-    height: 64px;
+    width: 60px;
+    height: 60px;
   }
 
   .conversation {
-    padding: var(--space-md) var(--space-md) calc(var(--space-lg) + var(--safe-bottom));
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: var(--space-md) var(--space-md) calc(var(--space-xl) + var(--safe-bottom) + 2rem);
     padding-top: calc(var(--space-md) + var(--safe-top));
+  }
+
+  .conversation-controls {
+    padding-bottom: 1rem;
+  }
+
+  .end-button {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: var(--color-text);
+    color: var(--color-text);
+    font-size: 1rem;
+    padding: 0.85rem 2rem;
+    min-height: 48px;
   }
 
   .timer__display {
@@ -606,11 +623,6 @@ body {
 
   .status-text {
     font-size: 1rem;
-  }
-
-  .end-button {
-    padding: 0.7rem 1.5rem;
-    font-size: 0.9rem;
   }
 }
 
