@@ -225,7 +225,7 @@ export class GeminiLiveAdapter {
       this.session.sendClientContent({
         turns: [{
           role: 'user',
-          parts: [{ text: "[System: Approximately 15 seconds remain in this conversation. Please wrap up naturally and say goodbye.]" }]
+          parts: [{ text: "[System: Approximately 5 seconds remain in this conversation. Please wrap up naturally and say goodbye.]" }]
         }]
       });
       console.log('[GeminiLiveAdapter] Time warning sent to AI');

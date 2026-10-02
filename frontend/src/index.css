@@ -4,12 +4,13 @@
   --color-text: #e8ecf4;
   --color-text-muted: #8a93a8;
   --color-accent: #4a9eff;
-  --color-accent-glow: rgba(74, 158, 255, 0.4);
+  --color-accent-light: #7fc4ff;
+  --color-accent-glow: rgba(74, 158, 255, 0.35);
   --color-button-bg: #4a9eff;
   --color-button-bg-hover: #5fb0ff;
   --color-button-text: #0a0e1a;
   --color-danger: #ff6b6b;
-  --color-danger-glow: rgba(255, 107, 107, 0.4);
+  --color-danger-glow: rgba(255, 107, 107, 0.35);
   --color-warning: #ffb347;
   --color-mic-active: #4ade80;
 
@@ -22,6 +23,9 @@
   --space-xl: 4rem;
 
   --radius-pill: 999px;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 * {
@@ -38,10 +42,17 @@ html, body, #root {
 body {
   font-family: var(--font-stack);
   background: linear-gradient(180deg, var(--color-bg-start), var(--color-bg-end));
+  background-size: 100% 200%;
+  animation: bg-shift 20s ease-in-out infinite;
   color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
+}
+
+@keyframes bg-shift {
+  0%, 100% { background-position: 0% 0%; }
+  50% { background-position: 0% 100%; }
 }
 
 .app {
@@ -51,9 +62,18 @@ body {
   align-items: center;
   justify-content: center;
   padding: var(--space-lg);
+  padding-top: calc(var(--space-lg) + var(--safe-top));
+  padding-bottom: calc(var(--space-lg) + var(--safe-bottom));
+  animation: page-enter 0.4s ease-out;
+}
+
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* ===== LANDING ===== */
+
 .landing {
   display: flex;
   flex-direction: column;
@@ -69,13 +89,14 @@ body {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
+  animation: fade-in-up 0.6s ease-out;
 }
 
 .app-title {
-  font-size: clamp(2.5rem, 8vw, 3.5rem);
+  font-size: clamp(2.5rem, 9vw, 3.75rem);
   font-weight: 700;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #ffffff, #b3c6e8);
+  background: linear-gradient(135deg, #ffffff 0%, #b3c6e8 100%);
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -90,10 +111,12 @@ body {
 .landing-cta {
   display: flex;
   justify-content: center;
+  animation: fade-in-up 0.6s ease-out 0.15s both;
 }
 
 .landing-footer {
   max-width: 360px;
+  animation: fade-in-up 0.6s ease-out 0.3s both;
 }
 
 .privacy-note {
@@ -102,7 +125,13 @@ body {
   color: var(--color-text-muted);
 }
 
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* ===== TALK BUTTON ===== */
+
 .talk-button {
   appearance: none;
   border: none;
@@ -117,25 +146,28 @@ body {
   border-radius: var(--radius-pill);
   min-width: 220px;
   min-height: 64px;
-  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 20px var(--color-accent-glow);
 }
 
 .talk-button:hover {
   background: var(--color-button-bg-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 32px var(--color-accent-glow);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 40px var(--color-accent-glow);
 }
 
 .talk-button:active {
   transform: translateY(0);
+  box-shadow: 0 2px 10px var(--color-accent-glow);
 }
 
 .talk-button:focus-visible {
-  outline: 3px solid var(--color-accent);
+  outline: 3px solid var(--color-accent-light);
   outline-offset: 4px;
 }
 
 /* ===== CONVERSATION ===== */
+
 .conversation {
   display: flex;
   flex-direction: column;
@@ -145,6 +177,7 @@ body {
   width: 100%;
   max-width: 480px;
   padding: var(--space-lg) var(--space-lg) calc(var(--space-lg) * 2);
+  padding-top: calc(var(--space-lg) + var(--safe-top));
   text-align: center;
 }
 
@@ -153,9 +186,9 @@ body {
 }
 
 .conversation-title {
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   color: var(--color-text-muted);
   text-transform: uppercase;
 }
@@ -165,6 +198,7 @@ body {
   display: flex;
   justify-content: center;
   min-height: 4rem;
+  margin-top: var(--space-sm);
 }
 
 .conversation-orb {
@@ -177,7 +211,11 @@ body {
 
 .conversation-status {
   width: 100%;
-  min-height: 2rem;
+  min-height: 3rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 .status-text {
@@ -185,9 +223,11 @@ body {
   font-weight: 400;
   color: var(--color-text);
   letter-spacing: 0.02em;
+  transition: opacity 0.3s ease;
 }
 
 /* ===== MIC INDICATOR ===== */
+
 .mic-indicator {
   display: flex;
   align-items: center;
@@ -195,7 +235,7 @@ body {
   gap: 0.4rem;
   font-size: 0.75rem;
   color: var(--color-text-muted);
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
   letter-spacing: 0.04em;
 }
 
@@ -210,10 +250,11 @@ body {
 
 @keyframes mic-pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  50% { opacity: 0.4; }
 }
 
 /* ===== CONVERSATION CONTROLS ===== */
+
 .conversation-controls {
   width: 100%;
   display: flex;
@@ -229,91 +270,164 @@ body {
   cursor: pointer;
   font-family: inherit;
   font-size: 0.95rem;
-  padding: 0.75rem 1.5rem;
+  padding: 0.75rem 1.75rem;
   border-radius: var(--radius-pill);
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
 }
 
 .end-button:hover {
   color: var(--color-text);
   border-color: var(--color-text);
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .end-button:focus-visible {
-  outline: 3px solid var(--color-accent);
+  outline: 3px solid var(--color-accent-light);
   outline-offset: 4px;
 }
 
 /* ===== VOICE ORB ===== */
+
 .voice-orb {
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
   position: relative;
+  width: 240px;
+  height: 240px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at center, var(--color-accent-glow) 0%, transparent 70%);
-  transition: opacity 0.4s ease, transform 0.4s ease;
+  transition: transform 0.5s ease, opacity 0.5s ease;
+  will-change: transform, opacity;
 }
+
+.voice-orb__ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-accent);
+  opacity: 0.15;
+  transition: opacity 0.5s ease, border-color 0.5s ease;
+  will-change: transform, opacity;
+}
+
+.voice-orb__ring--1 { width: 100%; height: 100%; }
+.voice-orb__ring--2 { width: 72%; height: 72%; opacity: 0.2; }
+.voice-orb__ring--3 { width: 48%; height: 48%; opacity: 0.25; }
 
 .voice-orb__core {
-  width: 80px;
-  height: 80px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #6fb5ff, var(--color-accent) 70%);
-  box-shadow: 0 0 30px var(--color-accent-glow), 0 0 60px var(--color-accent-glow);
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
+  background: radial-gradient(
+    circle at 30% 30%,
+    var(--color-accent-light) 0%,
+    var(--color-accent) 55%,
+    #2a7fdb 100%
+  );
+  box-shadow:
+    0 0 20px var(--color-accent-glow),
+    0 0 40px var(--color-accent-glow),
+    inset 0 -4px 12px rgba(0, 0, 0, 0.15),
+    inset 0 4px 8px rgba(255, 255, 255, 0.2);
+  transition: transform 0.4s ease, box-shadow 0.4s ease, background 0.5s ease;
+  will-change: transform;
 }
 
+/* --- State: CONNECTING --- */
+.voice-orb--connecting .voice-orb__ring {
+  animation: ring-ripple 1.8s ease-out infinite;
+}
+.voice-orb--connecting .voice-orb__ring--2 { animation-delay: 0.3s; }
+.voice-orb--connecting .voice-orb__ring--3 { animation-delay: 0.6s; }
 .voice-orb--connecting .voice-orb__core {
-  animation: orb-pulse-slow 1.5s ease-in-out infinite;
+  animation: core-pulse 1.5s ease-in-out infinite;
 }
 
+/* --- State: LISTENING --- */
+.voice-orb--listening .voice-orb__ring {
+  animation: ring-breathe 3.5s ease-in-out infinite;
+}
+.voice-orb--listening .voice-orb__ring--2 { animation-delay: 0.4s; }
+.voice-orb--listening .voice-orb__ring--3 { animation-delay: 0.8s; }
 .voice-orb--listening .voice-orb__core {
-  animation: orb-breathe 2.4s ease-in-out infinite;
+  animation: core-breathe 3.5s ease-in-out infinite;
 }
 
+/* --- State: AI_SPEAKING --- */
+.voice-orb--ai-speaking .voice-orb__ring {
+  animation: ring-ripple 1s ease-out infinite;
+}
+.voice-orb--ai-speaking .voice-orb__ring--2 { animation-delay: 0.15s; }
+.voice-orb--ai-speaking .voice-orb__ring--3 { animation-delay: 0.3s; }
 .voice-orb--ai-speaking .voice-orb__core {
-  animation: orb-pulse-fast 0.9s ease-in-out infinite;
-  box-shadow: 0 0 40px var(--color-accent-glow), 0 0 80px var(--color-accent-glow);
+  animation: core-pulse-fast 0.7s ease-in-out infinite;
+  box-shadow:
+    0 0 30px var(--color-accent-glow),
+    0 0 60px var(--color-accent-glow),
+    0 0 100px rgba(74, 158, 255, 0.2),
+    inset 0 -4px 12px rgba(0, 0, 0, 0.15),
+    inset 0 4px 8px rgba(255, 255, 255, 0.25);
 }
 
+/* --- State: ENDING --- */
+.voice-orb--ending {
+  opacity: 0.4;
+  transform: scale(0.88);
+}
 .voice-orb--ending .voice-orb__core {
-  animation: orb-fade 1.2s ease-out forwards;
+  animation: core-fade 1.2s ease-out forwards;
+}
+.voice-orb--ending .voice-orb__ring {
+  animation: none;
+  opacity: 0.05;
 }
 
-.voice-orb--error {
-  background: radial-gradient(circle at center, var(--color-danger-glow) 0%, transparent 70%);
+/* --- State: ERROR --- */
+.voice-orb--error .voice-orb__ring {
+  border-color: var(--color-danger);
+  opacity: 0.15;
 }
-
 .voice-orb--error .voice-orb__core {
-  background: radial-gradient(circle at 30% 30%, #ff9a9a, var(--color-danger) 70%);
-  box-shadow: 0 0 30px var(--color-danger-glow);
+  background: radial-gradient(
+    circle at 30% 30%,
+    #ff9a9a 0%,
+    var(--color-danger) 55%,
+    #cc4444 100%
+  );
+  box-shadow: 0 0 20px var(--color-danger-glow), 0 0 40px var(--color-danger-glow);
 }
 
-@keyframes orb-pulse-slow {
+/* --- Keyframes --- */
+@keyframes ring-ripple {
+  0% { transform: scale(0.85); opacity: 0.3; }
+  100% { transform: scale(1.15); opacity: 0.02; }
+}
+
+@keyframes ring-breathe {
+  0%, 100% { transform: scale(1); opacity: 0.15; }
+  50% { transform: scale(1.06); opacity: 0.28; }
+}
+
+@keyframes core-pulse {
   0%, 100% { transform: scale(1); opacity: 0.85; }
-  50% { transform: scale(1.12); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 1; }
 }
 
-@keyframes orb-breathe {
+@keyframes core-breathe {
   0%, 100% { transform: scale(1); opacity: 0.9; }
-  50% { transform: scale(1.08); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 1; }
 }
 
-@keyframes orb-pulse-fast {
+@keyframes core-pulse-fast {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.18); }
 }
 
-@keyframes orb-fade {
-  0% { opacity: 0.5; transform: scale(1); }
-  100% { opacity: 0.3; transform: scale(0.85); }
+@keyframes core-fade {
+  0% { opacity: 0.4; transform: scale(1); }
+  100% { opacity: 0.15; transform: scale(0.75); }
 }
 
 /* ===== TIMER ===== */
+
 .timer {
   display: flex;
   flex-direction: column;
@@ -322,12 +436,13 @@ body {
 }
 
 .timer__display {
-  font-size: clamp(2rem, 8vw, 3rem);
+  font-size: clamp(2.25rem, 9vw, 3.25rem);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   color: var(--color-text);
   letter-spacing: 0.02em;
-  transition: color 0.3s ease;
+  transition: color 0.4s ease;
+  line-height: 1.2;
 }
 
 .timer--warning .timer__display {
@@ -336,19 +451,21 @@ body {
 }
 
 .timer__warning-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   color: var(--color-warning);
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   font-weight: 600;
+  animation: timer-pulse 1s ease-in-out infinite;
 }
 
 @keyframes timer-pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+  50% { opacity: 0.5; }
 }
 
 /* ===== COMPLETED ===== */
+
 .completed {
   display: flex;
   flex-direction: column;
@@ -369,7 +486,7 @@ body {
 
 .completed-message {
   font-size: clamp(1rem, 4vw, 1.15rem);
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--color-text-muted);
   max-width: 360px;
 }
@@ -380,6 +497,7 @@ body {
 }
 
 /* ===== ERROR ===== */
+
 .error-screen {
   display: flex;
   flex-direction: column;
@@ -415,21 +533,23 @@ body {
   padding: 0.85rem 2rem;
   border-radius: var(--radius-pill);
   min-width: 180px;
-  transition: transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+  transition: transform 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 4px 20px var(--color-accent-glow);
 }
 
 .retry-button:hover {
   background: var(--color-button-bg-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px var(--color-accent-glow);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px var(--color-accent-glow);
 }
 
 .retry-button:focus-visible {
-  outline: 3px solid var(--color-accent);
+  outline: 3px solid var(--color-accent-light);
   outline-offset: 4px;
 }
 
 /* ===== DEV TEST BUTTON ===== */
+
 .dev-test-button {
   appearance: none;
   border: 1px dashed var(--color-text-muted);
@@ -440,7 +560,8 @@ body {
   font-size: 0.75rem;
   padding: 0.4rem 0.9rem;
   border-radius: var(--radius-pill);
-  opacity: 0.6;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
 }
 
 .dev-test-button:hover {
@@ -448,6 +569,7 @@ body {
 }
 
 /* ===== MOBILE ===== */
+
 @media (max-width: 480px) {
   .landing {
     gap: var(--space-lg);
@@ -460,8 +582,8 @@ body {
   }
 
   .voice-orb {
-    width: 180px;
-    height: 180px;
+    width: 200px;
+    height: 200px;
   }
 
   .voice-orb__core {
@@ -470,10 +592,44 @@ body {
   }
 
   .conversation {
-    padding: var(--space-md) var(--space-md) var(--space-lg);
+    padding: var(--space-md) var(--space-md) calc(var(--space-lg) + var(--safe-bottom));
+    padding-top: calc(var(--space-md) + var(--safe-top));
   }
 
   .timer__display {
     font-size: 2.25rem;
+  }
+
+  .conversation-title {
+    font-size: 0.75rem;
+  }
+
+  .status-text {
+    font-size: 1rem;
+  }
+
+  .end-button {
+    padding: 0.7rem 1.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* ===== REDUCED MOTION ===== */
+
+@media (prefers-reduced-motion: reduce) {
+  body {
+    animation: none;
+  }
+
+  .app {
+    animation: none;
+  }
+
+  .voice-orb__ring,
+  .voice-orb__core,
+  .timer--warning .timer__display,
+  .timer__warning-label,
+  .mic-indicator__dot {
+    animation: none !important;
   }
 }

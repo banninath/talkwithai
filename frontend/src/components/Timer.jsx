@@ -73,8 +73,8 @@ function Timer({
     <div className={`timer ${isWarning ? 'timer--warning' : ''}`}>
       <span className="timer__display">{display}</span>
       {isWarning && (
-        <span className="timer__warning-label">15 seconds remaining</span>
-      )}
+  <span className="timer__warning-label">{warningThresholdSeconds} seconds remaining</span>
+)}
     </div>
   );
 }
